@@ -9,6 +9,7 @@ import requests
 
 
 
+
 db_name = 'wikipedia-page'
 collection_name = 'topicdetails'
 logger = getLog('wikiscrapping.py')
@@ -32,14 +33,16 @@ def index():
         # obtaining the search string entered in the form
         searchString = request.form['search']
         s1 = searchString.replace(' ','').lower()
-        s2 = searchString.replace('_','').lower()
+        s2 = s1.replace('_','')
+        l1 = list(searchString.split(" "))[::-1]
+        s3 = "".join(l1)
         try:
             mongoClient = MongoDBManagement(username='mangodb', password='mangodb')
             logger.info(f"connection stable with database...")
-            if mongoClient.checkRecordOnQuery(db_name=db_name, collection_name=collection_name,query={"$or": [{"topic": searchString}, {"topic": s1},{ "topic": s2}]}):
+            if mongoClient.checkRecordOnQuery(db_name=db_name, collection_name=collection_name,query={"$or": [ {"topic": s1},{ "topic": s2},{"topic": s3}]}):
 
                 logger.info(f"checked record in database...")
-                result = mongoClient.findRecordOnQuery(db_name=db_name, collection_name=collection_name,query={"$or": [{"topic": searchString}, {"topic": s1},{ "topic": s2}]})
+                result = mongoClient.findRecordOnQuery(db_name=db_name, collection_name=collection_name,query={"$or": [ {"topic": s1},{ "topic": s2},{"topic": s3}]})
 
                 logger.info(f"fetch record from database for {searchString}")
 
@@ -47,12 +50,24 @@ def index():
 
             else:
                 result = new_topic(searchString)
-                logger.info(f"scrapped data from wikipedia for {searchString}")
-                mongoClient.insertRecord(db_name=db_name,
-                                         collection_name=collection_name,
-                                         record=result)
-                logger.info(f"inserted record in database...")
-                return render_template('results.html', result=result)
+                if type(result)!=dict:
+                    res = new_topic(result)
+                    logger.info(f"scrapped data from wikipedia for {result} after tranforming searchstring" )
+                    mongoClient.insertRecord(db_name=db_name,
+                                             collection_name=collection_name,
+                                             record=res)
+                    logger.info(f"inserted record for {result} in database...")
+                    return render_template('results.html', result=res)
+
+
+
+                else:
+                    logger.info(f"scrapped data from wikipedia for {searchString}")
+                    mongoClient.insertRecord(db_name=db_name,
+                                             collection_name=collection_name,
+                                             record=result)
+                    logger.info(f"inserted record for {searchString} in database...")
+                    return render_template('results.html', result=result)
 
         except Exception as e:
             print("(app.py) - Something went wrong while rendering all the details of topic.\n" + str(e))
@@ -82,7 +97,10 @@ def new_topic(searchString):
         return result
 
     except Exception as e:
-        raise Exception("(new_topic) - Something went wrong on retrieving new_topic.\n" + str(e))
+        print("(new_topic) - Something went wrong on retrieving new_topic.\n" + str(e))
+        st = searchString.replace(' ', '').lower()
+        st1 = st.replace('_', '')
+        return st1
 
 
 def new_pic(topic_page):
@@ -116,6 +134,7 @@ def new_imgs(topic_page):
 @cross_origin()
 def topic_suggestion():
     try:
+
         return "Unable to search the topic check for spelling mistake/ search topic without spaces.  Eg. 'web scrapping' search as webscrapping or web_scrapping"
     except:
         raise Exception("(topic_suggestion) - Something went wrong on topic_suggestion.\n" + str(e))
