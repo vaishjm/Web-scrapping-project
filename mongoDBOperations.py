@@ -1,11 +1,6 @@
 import pymongo
 
 
-"""
-cluster = MongoClient("mongodb+srv://<username>:<password>@cluster0.s8prn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-db = cluster['wikipedia']
-collection = db['wiki-summary']
-"""
 class MongoDBManagement:
     def __init__(self, username, password):
         """
@@ -14,7 +9,7 @@ class MongoDBManagement:
         try:
             self.username = username
             self.password = password
-            self.url = "mongodb+srv://ineuron:ineuron@cluster0.s8prn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+            self.url = "url"
             # self.url = 'localhost:27017'
         except Exception as e:
             raise Exception(f"(__init__): Something went wrong on initiation process\n" + str(e))
